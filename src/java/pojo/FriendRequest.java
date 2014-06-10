@@ -6,6 +6,7 @@ package pojo;
 
 import java.sql.*;
 import java.text.ParseException;
+import java.util.ArrayList;
 
 /**
  *
@@ -21,6 +22,7 @@ public class FriendRequest
 	private String reqid;
 	private String name;
 	private String email;
+        private String image;
 	
 	public String getEmail()
 	{
@@ -32,7 +34,7 @@ public class FriendRequest
 	}
 	public String getName()
 	{
-	return name;
+            return name;
 	}
 	public void setName(String name)
 	{
@@ -82,32 +84,43 @@ public class FriendRequest
 	{
 		return status;
 	}
+        public String getImage()
+        {
+            return image;
+        }
+        public void setImage(String image)
+        {
+            this.image = image;
+        }
+        
 	public void setStatus(String status)
 	{
-	this.status=status;
-	}
+            this.status=status;
+        }
 	
 	public boolean sendRequest()
 	{
 		boolean ret_val = false;
+		String query = null;
 		DbContainor.loadDbDriver();
 		try
 		{
-			Connection con = DriverManager.getConnection(DbContainor.dburl,DbContainor.dbuser,DbContainor.dbpwd);
-			PreparedStatement ps = con.prepareStatement("insert into friendrequest values(?,?,?,?,?,?)");
-			ps.setString(1, "reqid");
-			ps.setString(2, "reqsender");
-			ps.setString(3,"reqreceiver");
+                        query = "insert into friendrequest values(?,?,?,?,?,?)";
+			Connection con = DbContainor.createConnection();
+			PreparedStatement ps = con.prepareStatement(query);
+			ps.setString(1,this.getReqid());
+			ps.setString(2, this.getReqSender());
+			ps.setString(3,this.getReqReciever());
 			try
 			{
-				ps.setDate(4,DbContainor.toSQLDate(reqdate));
+				ps.setDate(4,DbContainor.toSQLDate(this.getReqdate()));
 			}
 			catch (ParseException ex)
 			{
 				System.out.println("can not convert date : "+ex.getMessage());
 			}
-			ps.setString(5,"message");
-			ps.setString(6,"status");
+			ps.setString(5,this.getMsg());
+			ps.setString(6,this.getStatus());
 			if(ps.executeUpdate()>0)
 			{
 				System.out.println("Data Succesfully updated into FriendRequest table  ");
@@ -119,45 +132,66 @@ public class FriendRequest
 			}
 			con.close();
 		}
+		catch(NullPointerException npe)
+		{
+			System.out.println("DbContainor.createConnection():can not create connection to database : "+npe.getMessage());
+		}
 		catch(SQLException sqle)
 		{
-			System.out.println("SQL Error in sendRequest() of FriendRequest.java");
+			System.out.println("SQL Error in sendRequest() of FriendRequest.java : "+sqle.getMessage());
 		}
-		return false;  
+		return ret_val;  
 	}
     
-	public FriendRequest findReceivedRequest()
+	public ArrayList<FriendRequest> findReceivedRequest()
 	{
-		FriendRequest fr = new FriendRequest();
+                String query = null;
+                ArrayList<FriendRequest> frnd_req_list = new ArrayList<FriendRequest>();
 		DbContainor.loadDbDriver();
 		try
 		{
-			Connection con = DriverManager.getConnection(DbContainor.dburl,DbContainor.dbuser,DbContainor.dbpwd);
-			PreparedStatement ps =con.prepareStatement("select fname, mname, lname, email from userinfo where email in (select reqsender from friendrequest where REQRECEIVER=? and status='unconfirmed')");
+			query = "select fname, mname, lname, email, userimage from userinfo where email in (select reqsender from friendrequest where REQRECEIVER=? and status='Pending')";
+			Connection con = DbContainor.createConnection();
+			PreparedStatement ps = con.prepareStatement(query);
 			ps.setString(1,reqReciever);
 			ResultSet rs = ps.executeQuery();
-			if(rs.next())
+			while(rs.next())
 			{
-				fr.setName(rs.getString("fname")+" "+rs.getString("mname")+" "+rs.getString("lname"));
-				fr.setEmail(rs.getString("email"));
+                                FriendRequest frnd_req = new FriendRequest();	
+                                String mname = rs.getString("mname");
+				/* System.out.println("mname is  :" +mname); */
+				if(mname==null)
+				{
+					mname=" ";
+				}
+				frnd_req.setName(rs.getString("fname")+" "+mname+" "+rs.getString("lname"));
+				frnd_req.setEmail(rs.getString("email"));
+                                frnd_req.setImage(rs.getString("userimage"));
+                                frnd_req_list.add(frnd_req);
 			}
 			con.close();
+		}
+		catch(NullPointerException npe)
+		{
+			System.out.println("DbContainor.createConnection():can not create connection to database : "+npe.getMessage());
 		}
 		catch(SQLException sqle)
 		{
 			System.out.println("SQL Error in findRecievedRequest() of FriendRequest.java  :"+ sqle.getMessage());
 		}		
-		return fr;
+		return frnd_req_list;
 	}
      
 	public boolean updateRequest()
 	{
 		boolean ret_val = false;
+		String query = null;
 		DbContainor.loadDbDriver();
 		try
 		{
-			Connection con = DriverManager.getConnection(DbContainor.dburl,DbContainor.dbuser,DbContainor.dbpwd);
-			PreparedStatement ps = con.prepareStatement("update friendrequest set status='confirmed' where reqsender=? and reqreceiver=?");
+			query = "update friendrequest set status='confirmed' where reqsender=? and reqreceiver=?";
+			Connection con = DbContainor.createConnection();
+			PreparedStatement ps = con.prepareStatement(query);
 			ps.setString(1,reqSender);
 			ps.setString(2,reqReciever);
 			if(ps.executeUpdate()>0)
@@ -169,6 +203,10 @@ public class FriendRequest
 			{
 				System.out.println("c'ldn't update friendrequest table  in updateRequest() in class FriendRequest.java");
 			}
+		}
+		catch(NullPointerException npe)
+		{
+			System.out.println("DbContainor.createConnection():can not create connection to database : "+npe.getMessage());
 		}
 		catch(SQLException sqle)
 		{

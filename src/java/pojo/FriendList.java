@@ -66,46 +66,56 @@ public class FriendList
 	
 	public ArrayList<FriendList> getFriendList()
 	{
-		ArrayList<FriendList>al=new ArrayList();
+		ArrayList<FriendList> f_list = new ArrayList();
+		String query = null;
 		DbContainor.loadDbDriver();
 		try
 		{
-			Connection con = DriverManager.getConnection(DbContainor.dburl,DbContainor.dbuser,DbContainor.dbpwd);
-			PreparedStatement ps = con.prepareStatement("Select fname, mname, lname,EMail ,USERIMAGE from userinfo where EMail in (Select friendid from friendlist where userid=?)");
+			
+			query = "Select fname, mname, lname,EMail ,USERIMAGE from userinfo where EMail in (Select friendid from friendlist where userid=?)";
+			Connection con = DbContainor.createConnection();
+			PreparedStatement ps = con.prepareStatement(query);
 			ps.setString(1, userid);
 			ResultSet rs=ps.executeQuery();
 			
 			while(rs.next())
 			{
-				FriendList fl = new FriendList();
+				FriendList flst = new FriendList();
 				String mname = rs.getString(2);
 				/* System.out.println("mname is  :" +mname); */
 				if(mname==null)
 				{
 					mname=" ";
 				}
-				fl.setName(rs.getString(1)+" "+mname+" "+rs.getString(3));
-				fl.setFriendid(rs.getString(4));
-				fl.setUserimage(rs.getString(5));
-				al.add(fl);
+				flst.setName(rs.getString(1)+" "+mname+" "+rs.getString(3));
+				flst.setFriendid(rs.getString(4));
+				flst.setUserimage(rs.getString(5));
+				f_list.add(flst);
 			}
 			con.close();
+		}
+		catch(NullPointerException npe)
+		{
+			System.out.println("DbContainor.createConnection():can not create connection to database : "+npe.getMessage());
 		}
 		catch(SQLException sqle)
 		{
 			System.out.println("sql error in getFriendlist of FrienList.java : " + sqle.getMessage());
 		}
-		return al;
+		return f_list;
 	}
     
 	public boolean updateFriendList()
 	{
 		boolean ret_val =false;
+		String query = null;
 		DbContainor.loadDbDriver();
 		try
 		{
-			Connection con  = DriverManager.getConnection(DbContainor.dburl,DbContainor.dbuser,DbContainor.dbpwd);
-			PreparedStatement ps = con.prepareStatement("insert into friendlist values(?,?)");
+			
+			query = "insert into friendlist values(?,?)";
+			Connection con = DbContainor.createConnection();
+			PreparedStatement ps = con.prepareStatement(query);
 			ps.setString(1,userid);
 			ps.setString(2, friendid);
 			if(ps.executeUpdate()>0)
@@ -119,10 +129,41 @@ public class FriendList
 			}
 			con.close();
 		}
+		catch(NullPointerException npe)
+		{
+			System.out.println("DbContainor.createConnection():can not create connection to database : "+npe.getMessage());
+		}
 		catch(SQLException sqle)
 		{
 			System.out.println("sql error in createFriendList() of FriendList.java : " + sqle.getMessage());
 		}
 		return ret_val;
 	}
+        public boolean isFriend()
+        {
+            boolean ret_val = false;    
+            String query = null;
+            DbContainor.loadDbDriver();
+            System.out.println("in isFriend ...");
+            try
+            {
+                query = "select * from friendlist where USERID=? and FRIENDID=? ";
+                Connection con = DbContainor.createConnection();
+                PreparedStatement ps = con.prepareStatement(query);  
+                ps.setString(1, this.userid);
+                ps.setString(2, this.friendid);
+                ResultSet rs = ps.executeQuery();
+                if(rs.next())
+                    ret_val = true;
+            }
+            catch(NullPointerException npe)
+            {
+		System.out.println("DbContainor.createConnection():can not create connection to database : "+npe.getMessage());
+            }
+            catch(SQLException sqle)
+            {
+		System.out.println("SQL Error in isFriend() of FriendRequest.java  :"+ sqle.getMessage());
+            }
+            return ret_val;
+         }
 }

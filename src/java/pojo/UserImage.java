@@ -55,7 +55,7 @@ public class UserImage
 		DbContainor.loadDbDriver();
 		try
 		{
-			query = "update userinfo set userimage=? where EMail=?"
+			query = "update userinfo set userimage=? where EMail=?";
 			Connection con = DbContainor.createConnection();
 			PreparedStatement ps = con.prepareStatement(query);
 			ps.setString(1, userImage);
@@ -118,7 +118,7 @@ public class UserImage
 	
 	public void delUserImageFile()
 	{
-		String image = getImage().getUserImage();
+		String image = this.getImage().getUserImage();
 		String query = null;
 		File img = new File(image);
 		
@@ -130,7 +130,7 @@ public class UserImage
 		{
 			System.out.println("can not delete UserImage from server.");
 		}
-        }
+    }
 
 	public boolean delImage() 
 	{
@@ -140,7 +140,7 @@ public class UserImage
         
 		try
 		{
-			query = "delete userimage from userinfo where EMail=?"
+			query = "delete userimage from userinfo where EMail=?";
 			Connection con = DbContainor.createConnection();
 			PreparedStatement ps = con.prepareStatement(query);
 			ps.setString(1, uid);

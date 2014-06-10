@@ -16,7 +16,7 @@
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
         <title>Socioware/UserProfile</title>
         
-        <link href="CSS/UserProfile.css" rel="stylesheet" type="text/css" > 
+        <link href="style/UserProfile.css" rel="stylesheet" type="text/css" > 
         <script type="text/javascript" src="js/jquery.js"></script>
         <script>
            $(document).ready(function(){
@@ -335,22 +335,27 @@
         <div id="dv3">
             <div id="dv3_1">My Updates</div>
             <div id="UpdateScroller"> 
-            <%
-              PublishStatus pb=new PublishStatus();
-              
-              pb.setUnid(id);
-               ArrayList<PublishStatus> pbls=pb.findAllStatus();
-             //  System.out.println("in uerprofile.jsp");
-              for(int i=0;i<pbls.size();i++)
-                 {
-                           
+                <%
+                    Status status = new Status();
+                    status.setUnid(id);
+                    User user = new User();
+                    ArrayList<Status> status_list = status.findAllStatus();
+                    for(int i=0;i<status_list.size();i++)
+                    {
+                        user = status_list.get(i).getUser();
+                        status = status_list.get(i);
                 %>  
-                <div class="stts"><%=pbls.get(i).getContent()%> 
+                <div class="stts">
+                     <a class="rs" href="SecondUserProfile.jsp?qid=<%=user.getEmail()%>">
+                         <img width="30px" height="30px" alt="ulpoads/na.jpg" src="uploads/<%=user.getUserImage()%>" />
+                         <span class="pblsr"><%=user.getFname()+user.getMname()+user.getLname()%></span>
+                     </a>
+                </div>
+                <div class="stts"><%=status.getContent()%>
                 </div>
                 <%
-                 }
-             //  System.out.println("chk");
-                 %>
+                    }
+                %>
              </div>
         </div>
         <div id="dv4">
@@ -429,7 +434,7 @@
                                 image="na.jpg";
                        %>
                 <div class="frnd">
-                     <a id="rs" href="SecondUserProfile.jsp?qid=<%=fls.get(i).getFriendid()%>">
+                     <a class="rs" href="SecondUserProfile.jsp?qid=<%=fls.get(i).getFriendid()%>">
                          <img width="40px" height="40px" alt="ulpoads/na.jpg" src="uploads/<%=image%>" />
                          <span class="usr"><%=fls.get(i).getName()%></span>
                      </a>
@@ -557,21 +562,24 @@
             <div id="Message">
                 <div id="MsgScroller">
             <div id="MessageBox">
-               <%
-                  Message msg=new Message();
-                  msg.setReceiverid(id);
-                 ArrayList<Message> msgs= msg.findAllMessages();
-                 for(int i=0;i<msgs.size();i++)
-                     {
-                     
-                     System.out.println(msgs.get(i).getMessage());
-                       %> 
-                <div class="MsgBox">
-                    <%=msgs.get(i).getMessage()%>
-                </div>
-                <%
-                     }
-                       %>
+			<%
+				Message msg = new Message();
+				msg.setReceiverid(id);
+				ArrayList<Message> msgs_list = msg.findAllMessages();
+				for(int i=0;i<msgs_list.size();i++)
+				{
+                                    user = msgs_list.get(i).getUser();
+			%> 
+			<div class="MsgBox">
+				<a class="rs" href="SecondUserProfile.jsp?qid=<%=msgs_list.get(i).getSenderid()%>">
+				<img width="30px" height="30px" alt="ulpoads/na.jpg" src="uploads/<%=user.getUserImage()%>" />
+				<span class="usr"><%=user.getFname()+user.getMname()+user.getLname()%></span>
+				</a>
+				<span class="msg"><%=msgs_list.get(i).getMessage()%></span>
+			</div>
+			<%
+				}
+			%>
                <!-- <div id="MsgBox2"></div>
                 <div id="MsgBox3"></div> -->
             </div>
@@ -579,18 +587,36 @@
             </div>
         </div>
             <div id="Request">
-                <div id="RequestHeader"><span id="Req">Your Request Box</span>
-                    <img id="ReqClose" src="images/btn-delete.gif"></div>
-                <div id="RequestList">
-                    <div class="RequestList1">
-                        <span id="Req">User Name</span>
-                        <form class="ReqForm">
-                            <input type="submit" value="Accept" title="Accept friend">
-                            <input type="button" value="Decline" title="Decline friend">
-                        </form>
-                    </div>
-                   
+                <div id="RequestHeader"><span id="Req">Friend Request</span>
+                    <img id="ReqClose" src="images/btn-delete.gif">
                 </div>
+                <div id="RequestList">
+					<% 
+						FriendRequest frnd_req = new FriendRequest();
+						frnd_req.setReqReciever(id);
+						ArrayList<FriendRequest> frnd_req_list = frnd_req.findReceivedRequest();
+						for(int i=0;i<frnd_req_list.size();i++)
+						{
+							frnd_req = frnd_req_list.get(i);
+                                                        
+                                                        System.out.println(frnd_req.getName());
+					%> 
+                                        <div class="RequestList1">
+						<div class="frnd_req" >
+							<a class="rs" href="SecondUserProfile.jsp?qid=<%=frnd_req.getEmail()%>" style="color: white">
+								<img width="40px" height="40px" src="uploads/<%=frnd_req.getImage()%>" alt="ulpoads/na.jpg" title="<%=frnd_req.getName()%>"></img>
+								<span class="usr"><%=frnd_req.getName()%></span>
+							</a>
+					</div>
+					<form class="ReqForm" action="AcceptRequest?qid=<%=frnd_req.getEmail()%>" method="post">
+						<input type="submit" value="Accept" title="Accept friend">
+						<input type="button" value="Decline" title="Decline friend">
+					</form>
+					</div>
+					<%
+						}
+					%>
+                </div>		
                </div>
         <div id="Notify">
                 <div id="NotifyHeader"><span id="Noti">My Notice Board</span>

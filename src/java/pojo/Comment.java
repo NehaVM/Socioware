@@ -52,14 +52,6 @@ public class Comment
 	{
 		this.comments = comments;
 	}
-	public Connection getCon()
-	{
-		return con;
-	}
-	public void setCon(Connection con)
-	{
-		this.con = con;
-	}
 	public int getLikes()
 	{
 		return likes;
@@ -67,14 +59,6 @@ public class Comment
 	public void setLikes(int likes)
 	{
 		this.likes = likes;
-	}
-	public PreparedStatement getPs()
-	{
-		return ps;
-	}
-	public void setPs(PreparedStatement ps)
-	{
-		this.ps = ps;
 	}
 	public String getUnid()
 	{
@@ -87,31 +71,33 @@ public class Comment
     
 	public Comment()
 	{
-		cmntid = new String();
-		unid = new String();
-		cmnton = new String();
-		mntdate = new String();
-		comments = new String();
-		ikes = 0;
+		this.cmntid = new String();
+		this.unid = new String();
+		this.cmnton = new String();
+		this.cmntdate = new String();
+		this.comments = new String();
+		this.likes = 0;
 	}
 	public Comment(String cmntid, String unid, String cmnton,String cmntdate,String comments, int likes)
 	{
-		this.cmntid=cmntid;
-		this.unid=unid;
-		this.cmnton=cmnton;
-		this.cmntdate=cmntdate;
-		this.comments=comments;
-		this.likes=likes;
+		this.cmntid = cmntid;
+		this.unid = unid;
+		this.cmnton = cmnton;
+		this.cmntdate = cmntdate;
+		this.comments = comments;
+		this.likes = likes;
 	}
         
 	public boolean addComment()
 	{
 		boolean ret_val = false;
+		String query = null;
 		DbContainor.loadDbDriver();
 		try
 		{
-			Connection con = DriverManager.getConnection(DbContainor.dburl, DbContainor.dbuser, DbContainor.dbpwd);
-			PreparedStatement ps = con.prepareStatement("Insert into comments values(?,?,?,?,?,?)");
+			query = "Insert into comments values(?,?,?,?,?,?)";
+			Connection con = DbContainor.createConnection();
+			PreparedStatement ps = con.prepareStatement(query);
 			ps.setString(1,cmntid);
 			ps.setString(2, unid);
 			ps.setString(3, cmnton);
@@ -136,6 +122,10 @@ public class Comment
 			}
 			con.close();
 		}
+		catch(NullPointerException npe)
+		{
+			System.out.println("DbContainor.createConnection():can not create connection to database : "+npe.getMessage());
+		}
 		catch(SQLException sqle)
 		{
 			System.out.println("sql error in addComment() of Comment.java : " + sqle.getMessage());
@@ -146,11 +136,13 @@ public class Comment
 	public boolean deleteComment()
 	{
 		boolean ret_val = false;
+		String query = null;
 		DbContainor.loadDbDriver();
 		try
 		{
-			Connection con = DriverManager.getConnection(DbContainor.dburl, DbContainor.dbuser, DbContainor.dbpwd);
-			PreparedStatement ps = con.prepareStatement("delete from comments where cmntid=?");
+			query = "delete from comments where cmntid=?";
+			Connection con = DbContainor.createConnection();
+			PreparedStatement ps = con.prepareStatement(query);
 			ps.setString(1,cmntid);
 
 			if(ps.executeUpdate()>0)
@@ -164,20 +156,27 @@ public class Comment
 			}
 			con.close();
 		}
+		catch(NullPointerException npe)
+		{
+			System.out.println("DbContainor.createConnection():can not create connection to database : "+npe.getMessage());
+		}
 		catch(SQLException sqle)
 		{
 			System.out.println("sql error in deleteComment() of Comment.java  : " + sqle.getMessage());
 		}
+                return ret_val;
 	}
         
 	public  ArrayList<Comment> findAllComments()
 	{
 		ArrayList<Comment> al = new ArrayList<Comment>();
 		DbContainor.loadDbDriver();
+		String query = null;
 		try
 		{
-			Connection con = DriverManager.getConnection(DbContainor.dburl, DbContainor.dbuser, DbContainor.dbpwd);
-			PreparedStatement ps = con.prepareStatement("Select * from comments");
+			query = "Select * from comments";
+			Connection con = DbContainor.createConnection();
+			PreparedStatement ps = con.prepareStatement(query);	
 			ResultSet rs = ps.executeQuery();
             
 			while(rs.next())
@@ -193,6 +192,10 @@ public class Comment
 			}
 			con.close();
         }
+		catch(NullPointerException npe)
+		{
+			System.out.println("DbContainor.createConnection():can not create connection to database : "+npe.getMessage());
+		}
 		catch(SQLException sqle)
 		{
 			System.out.println("sql error in findAllComment() of Comment.java : " + sqle.getMessage());

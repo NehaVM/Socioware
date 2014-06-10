@@ -19,6 +19,8 @@ public class Message
 	private String msgdate;
 	private String message;
 	private String status;
+	private String subject;
+        private User user;
 
 	public Message(String msgid, String senderid, String receiverid, String msgdate, String message, String status)
 	{
@@ -38,6 +40,17 @@ public class Message
 		this.message = new String();
 		this.status = new String();
 	}
+	
+	public void setSubject(String subject)
+	{
+            this.subject = subject;
+	}
+
+	public String getSubject()
+	{
+		return subject;
+	}
+        
 	public String getMessage()
 	{
 		return message;
@@ -86,18 +99,30 @@ public class Message
 	{
 		this.status = status;
 	}
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
+    }
+        
+        
     
 	public boolean sendMessage()
 	{
 		boolean ret_val = false;
+		String query = null;
 		DbContainor.loadDbDriver();
         
 		try
 		{
-			Connection con = DriverManager.getConnection(DbContainor.dburl,DbContainor.dbuser,DbContainor.dbpwd);
-			PreparedStatement ps = con.prepareStatement("insert into message values(?,?,?,?,?,?)");
-			ps.setString(1, msgid);
-			ps.setString(2, senderid);
+			query = "insert into message values(?,?,?,?,?,?,?)";
+			Connection con = DbContainor.createConnection();
+			PreparedStatement ps = con.prepareStatement(query);
+			ps.setString(1, this.msgid);
+			ps.setString(2, this.senderid);
 			ps.setString(3,this.receiverid);
             
 			try
@@ -106,10 +131,11 @@ public class Message
 			}
 			catch (ParseException ex)
 			{
-				System.out.println("can not convert date in saveMessage() of Message : "+ex.getMessage());
+				System.out.println("can not convert date in sendMessage() of Message : "+ex.getMessage());
 			}
-			ps.setString(6, this.message);
-			ps.setString(5,this.status);
+			ps.setString(5,this.subject);
+                        ps.setString(6, this.message);
+                        ps.setString(7, this.status);
 
 			if(ps.executeUpdate()>0)
 			{
@@ -123,9 +149,13 @@ public class Message
 			}
 			con.close();
 		}
+		catch(NullPointerException npe)
+		{
+			System.out.println("DbContainor.createConnection():can not create connection to database : "+npe.getMessage());
+		}
 		catch(SQLException sqle)
 		{
-			System.out.println("sql error in saveMessage() : "+sqle.getMessage());
+			System.out.println("sql error in sendMessage() : "+sqle.getMessage());
 		}
 		return ret_val;
 	}
@@ -133,12 +163,14 @@ public class Message
 	public Message findMessageById()
 	{
 		Message msg = new Message();
+		String query = null;
 		DbContainor.loadDbDriver();
         
 		try
 		{
-			Connection con = DriverManager.getConnection(DbContainor.dburl,DbContainor.dbuser,DbContainor.dbpwd);
-			PreparedStatement ps = con.prepareStatement("select * from message where msgid=?");
+			query = "select * from message where msgid=?";
+			Connection con = DbContainor.createConnection();
+			PreparedStatement ps = con.prepareStatement(query);
 			ps.setString(1, msgid);
 			ResultSet rs = ps.executeQuery();
 			if(rs.next())
@@ -152,6 +184,10 @@ public class Message
 			}
 			con.close();
 		}
+		catch(NullPointerException npe)
+		{
+			System.out.println("DbContainor.createConnection():can not create connection to database : "+npe.getMessage());
+		}
 		catch(SQLException sqle)
 		{
 			System.out.println("sql error in findMessageById() : "+sqle.getMessage());
@@ -161,46 +197,69 @@ public class Message
     
 	public ArrayList<Message> findAllMessages()
 	{
-		ArrayList<Message> almsg = new ArrayList<Message>();
+		ArrayList<Message> msg_list = new ArrayList<Message>();
+		String query = null;
+                ClobToString clobtostr = new ClobToString();
 		DbContainor.loadDbDriver();
 		
 		try
 		{
-			Connection con = DriverManager.getConnection(DbContainor.dburl,DbContainor.dbuser,DbContainor.dbpwd);
-			PreparedStatement ps = con.prepareStatement("select * from message where receiverid=?");
-			ps.setString(1, this.receiverid);
+			//query = "select * from message where receiverid=?";
+                        query = "select fname ,mname ,lname ,U.userimage,M.senderid, M.message , M.msgdate  ,M.status,M.msgid from userinfo U JOIN  message M ON U.email=M.senderid where M.senderid in(select senderid from message where receiverid=?)";
+			Connection con = DbContainor.createConnection();
+			PreparedStatement ps = con.prepareStatement(query);
+			
+			ps.setString(1, this.getReceiverid());
 			ResultSet rs = ps.executeQuery();
-			String qry = "select fname,mname,lname,email from userinfo where email in (select SENDERID from message where RECEIVERID=?)";
+			//String qry = "select fname,mname,lname,email from userinfo where email in (select SENDERID from message where RECEIVERID=?)";
             
 			while(rs.next())
 			{
-				Message msg=new Message();
-				msg.setMsgid(rs.getString(1));
-				msg.setSenderid(rs.getString(2));
-				msg.setReceiverid(rs.getString(3));
-				msg.setMsgDate(rs.getDate(4).toString());
-				msg.setMessage(rs.getString(6));
-				msg.setStatus(rs.getString(5));
-				almsg.add(msg);
+				Message msg = new Message();
+                                User user = new User();
+                                String mname = rs.getString(2);
+                                if(mname==null)
+                                    mname=" ";
+                                user.setFname(rs.getString(1));
+                                user.setMname(mname);
+                                user.setLname(rs.getString(3));
+                                user.setUserImage(rs.getString(4));
+                                msg.setUser(user);
+				//msg.setMsgid(rs.getString(1));
+				msg.setSenderid(rs.getString(5));
+				clobtostr.setClob(rs.getClob(6));
+                                clobtostr.convertToString();
+                                msg.setMessage(clobtostr.getMessage());
+                                msg.setMsgDate(rs.getDate(7).toString());
+				msg.setStatus(rs.getString(8));
+                                msg.setMsgid(rs.getString(9));
+                                msg.setReceiverid(this.getReceiverid());
+				msg_list.add(msg);
 			}
 			con.close();
+		}
+		catch(NullPointerException npe)
+		{
+			System.out.println("DbContainor.createConnection():can not create connection to database : "+npe.getMessage());
 		}
 		catch(SQLException sqle)
 		{
 			System.out.println("sql error in findAllMessages() : "+sqle.getMessage());
 		}
-		return almsg;
+		return msg_list;
 	}
     
 	public boolean delMessage()
 	{
 		boolean ret_val = false;
+		String query = null;
 		DbContainor.loadDbDriver();
         
 		try
 		{
-			Connection con = DriverManager.getConnection(DbContainor.dburl,DbContainor.dbuser,DbContainor.dbpwd);
-			PreparedStatement ps = con.prepareStatement("delete * from message where msgid=?");
+			query = "delete * from message where msgid=?";
+			Connection con = DbContainor.createConnection();
+			PreparedStatement ps = con.prepareStatement(query);
 			ps.setString(1, msgid);
 
 			if(ps.executeUpdate()>0)
@@ -212,6 +271,10 @@ public class Message
 			{
 				System.out.println("can not delete record form message.");
 			}
+		}
+		catch(NullPointerException npe)
+		{
+			System.out.println("DbContainor.createConnection():can not create connection to database : "+npe.getMessage());
 		}
 		catch(SQLException sqle)
 		{
